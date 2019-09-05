@@ -1,0 +1,46 @@
+proc gplot data=msasdata.BluRayPlayers; 
+plot satisfaction*price; 
+proc means data=msasdata.BluRayPlayers mean median mode maximum minimum; 
+run;
+
+proc reg data=msasdata.BluRayPlayers noprint; 
+model satisfaction = price; 
+plot residual.*price; 
+run; 
+
+data msasdata.players; 
+set msasdata.blurayplayers;
+pricesq=price*price; 
+pricecube=price*price*price; 
+ods graphics on; 
+proc reg data=msasdata.players plots=predictions(X=Price); 
+model Satisfaction= price pricesq pricecube;
+run; 
+
+ods graphics on; 
+proc reg data=msasdata.players plots=predictions(X=Price) noprint; 
+model Satisfaction= pricesq pricecube; 
+output out=msasdata.outlier p=predict residual=resid rstudent=delresid lcl=lowercl ucl=uppercl;  
+proc print data=msasdata.outlier;  
+run; 
+quit; 
+ods graphics off; 
+
+data msasdata.players2;  
+set msasdata.outlier;  
+if -2.5<delresid<2.5;    
+keep satisfaction price pricesq pricecube;    
+ods graphics on;  
+proc reg data=msasdata.players2 plots=predictions(X=Price);  
+ model Satisfaction= pricesq pricecube; 
+
+ods graphics on;  
+proc reg data=msasdata.players2 plots=predictions(X=Price) noprint;  
+model Satisfaction= pricesq pricecube;  
+output out=msasdata.outlier2 p=predict residual=resid rstudent=delresid lcl=lowercl ucl=uppercl;   
+proc print data=msasdata.outlier2;    
+run;  
+quit;  
+ods graphics off;
+
+
